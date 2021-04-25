@@ -1,10 +1,13 @@
 defmodule Snuflake.Application do
+  @moduledoc """
+  Snuflake makes ids
+  """
   use Application
 
   require Logger
 
-  def start(_type, _args) do
-    GlobalId.start_link(0)
+  def start(node_id \\ 0) when node_id in 0..1023 do
+    GlobalId.start_link(node_id)
   end
 
   def get_id do

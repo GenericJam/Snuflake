@@ -5,10 +5,10 @@ defmodule GlobalId do
   Breakdown of pattern
   Time - 41
   10111100011111110010110101101101000101000
-  Ids per node - 12
-  100000000000
-  Node - 11
-  10000000000
+  Ids per node - 13
+  1000000000000
+  Node - 10
+  1000000000
   """
   use Agent
 
@@ -38,8 +38,7 @@ defmodule GlobalId do
     ets_ref = :ets.new(:"#{node_id}", [:set, :protected])
 
     # Compute all the values for this node and put them in ets for easy rapid access
-    # Ids per milli - 12 all of 000000000000 - 111111111111
-    # 1 bit left pad to future proof for future dates
+    # Ids per milli - 13 all of 0000000000000 - 1111111111111
     # Node - 10 one value between 0000000000 - 1111111111
     0..8191
     |> Enum.each(fn index ->

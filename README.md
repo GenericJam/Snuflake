@@ -1,21 +1,25 @@
-# snuflake
+# Snuflake
 
-**TODO: Add description**
+Snuflake creates IDs on the fly.
 
-## Installation
+`Snuflake.Application.start()` initializes the node with an id from 0 to 1023.
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `nuflake` to your list of dependencies in `mix.exs`:
+`Snuflake.Application.get_id()` to get an id with no error checking.
 
-```elixir
-def deps do
-  [
-    {:nuflake, "~> 0.1.0"}
-  ]
-end
-```
+`Snuflake.Application.get_id(previous_id)` to get an id with error checking.
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/nuflake](https://hexdocs.pm/nuflake).
+### Breakdown of pattern
 
+Timestamp - 41 bits
+
+`10111100011111110010110101101101000101000`
+
+Ids per node per millisecond - 13
+
+`0000000000000`
+
+Node - 10
+
+`1000000000`
+
+Put them altogether for 64 bits and turn it back into an integer again.
