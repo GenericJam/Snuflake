@@ -2,6 +2,8 @@
 
 Snuflake creates IDs on the fly.
 
+`iex -S mix` with run `Snuflake.Application.start()` with no commands.
+
 `Snuflake.Application.start()` initializes the node with an id of 0.
 
 or
