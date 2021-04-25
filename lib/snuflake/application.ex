@@ -6,10 +6,14 @@ defmodule Snuflake.Application do
 
   require Logger
 
-  # Set this to change the node_id
+  # Set this to change the node_id or pass it in as an arg
   @node_id 0
 
   @spec start(any, any) :: {:error, any} | {:ok, pid}
+  def start(_type, node_id: node_id) when node_id in 0..1023 do
+    GlobalId.start_link(node_id)
+  end
+
   def start(_type, _args) do
     GlobalId.start_link(@node_id)
   end

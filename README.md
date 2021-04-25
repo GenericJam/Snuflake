@@ -2,7 +2,11 @@
 
 Snuflake creates IDs on the fly.
 
-`Snuflake.Application.start()` initializes the node with an id from 0 to 1023.
+`Snuflake.Application.start()` initializes the node with an id of 0.
+
+or
+
+`Snuflake.Application.start([], node_id: node_id)` where node_id is any value between 0 to 1023.
 
 `Snuflake.Application.get_id()` to get an id with no error checking.
 
