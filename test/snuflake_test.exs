@@ -7,11 +7,17 @@ defmodule SnuflakeTest do
 
   describe "Snuflake.Application.get_id" do
     test "produces unique ids in order" do
+      Process.sleep(5000)
+      before = DateTime.utc_now()
+
       ids =
         Enum.map(0..1_000_000, fn _ ->
           Snuflake.Application.get_id()
         end)
 
+      afterward = DateTime.utc_now()
+
+      DateTime.diff(before, afterward) |> IO.inspect(label: "Elapsed:")
       assert in_order(ids)
     end
 

@@ -19,15 +19,13 @@ defmodule GlobalId do
   defstruct(
     current_timestamp: 0,
     current_id: 0,
-    node_id: 0,
-    ets_ref: nil
+    node_id: 0
   )
 
   @type t :: %GlobalId{
           current_timestamp: integer(),
           current_id: integer(),
-          node_id: integer(),
-          ets_ref: reference() | nil
+          node_id: integer()
         }
 
   @doc """
@@ -35,15 +33,13 @@ defmodule GlobalId do
   """
   @spec initialize(non_neg_integer) :: GlobalId.t()
   def initialize(node_id) do
-    ets_ref = :ets.new(:"#{node_id}", [:set, :protected])
-
-    # Compute all the values for this node and put them in ets for easy rapid access
+    # Compute all the values for this node and put them in persistent_term for easy rapid access
     # Ids per milli - 13 all of 0000000000000 - 1111111111111
     # Node - 10 one value between 0000000000 - 1111111111
     0..8191
     |> Enum.each(fn index ->
-      :ets.insert(
-        ets_ref,
+      :persistent_term.put(
+        {node_id, index},
         {index, [get_bin_string(index, 13), get_bin_string(node_id, 10)] |> IO.iodata_to_binary()}
       )
     end)
@@ -51,8 +47,7 @@ defmodule GlobalId do
     %GlobalId{
       current_timestamp: timestamp(),
       current_id: 0,
-      node_id: node_id,
-      ets_ref: ets_ref
+      node_id: node_id
     }
   end
 
@@ -91,29 +86,25 @@ defmodule GlobalId do
 
   ## Examples
 
-    iex>result = GlobalId.next_id(GlobalId.initialize(0), 16193045183241)
-    iex>%GlobalId{result | ets_ref: nil}
-    %GlobalId{current_id: 0, current_timestamp: 16193045183241, node_id: 0, ets_ref: nil}
+    iex>GlobalId.next_id(GlobalId.initialize(0), 16193045183241)
+    %GlobalId{current_id: 0, current_timestamp: 16193045183241, node_id: 0}
 
-    iex>result = GlobalId.next_id(GlobalId.initialize(1023), 16193045183241)
-    iex>%GlobalId{result | ets_ref: nil}
-    %GlobalId{current_id: 0, current_timestamp: 16193045183241, node_id: 1023, ets_ref: nil}
+    iex>GlobalId.next_id(GlobalId.initialize(1023), 16193045183241)
+    %GlobalId{current_id: 0, current_timestamp: 16193045183241, node_id: 1023}
 
     iex>GlobalId.next_id(%GlobalId{
     ...>current_timestamp: 1619304518324,
     ...>current_id: 0,
-    ...>node_id: 0,
-    ...>ets_ref: nil
+    ...>node_id: 0
     ...>}, 1619304518324)
-    %GlobalId{current_id: 1, current_timestamp: 1619304518324, node_id: 0, ets_ref: nil}
+    %GlobalId{current_id: 1, current_timestamp: 1619304518324, node_id: 0}
 
     iex>GlobalId.next_id(%GlobalId{
     ...>current_timestamp: 1619304518324,
     ...>current_id: 2046,
-    ...>node_id: 0,
-    ...>ets_ref: nil
+    ...>node_id: 0
     ...>}, 1619304518324)
-    %GlobalId{current_id: 2047, current_timestamp: 1619304518324, node_id: 0, ets_ref: nil}
+    %GlobalId{current_id: 2047, current_timestamp: 1619304518324, node_id: 0}
   """
   @spec next_id(GlobalId.t(), non_neg_integer) :: GlobalId.t()
   def next_id(
@@ -162,9 +153,9 @@ defmodule GlobalId do
   def next_id_process(%GlobalId{
         current_timestamp: current_timestamp,
         current_id: current_id,
-        ets_ref: ets_ref
+        node_id: node_id
       }) do
-    [{_, value}] = :ets.lookup(ets_ref, current_id)
+    {_, value} = :persistent_term.get({node_id, current_id})
 
     [get_bin_string(current_timestamp, 41), value]
     |> IO.iodata_to_binary()
