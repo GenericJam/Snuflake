@@ -40,7 +40,7 @@ defmodule GlobalId do
     |> Enum.each(fn index ->
       :persistent_term.put(
         {node_id, index},
-        {index, [get_bin_string(index, 13), get_bin_string(node_id, 10)] |> IO.iodata_to_binary()}
+        {index, <<get_bitstring(index, 13)::bitstring, get_bitstring(node_id, 10)::bitstring>>}
       )
     end)
 
@@ -157,33 +157,37 @@ defmodule GlobalId do
       }) do
     {_, value} = :persistent_term.get({node_id, current_id})
 
-    [get_bin_string(current_timestamp, 41), value]
-    |> IO.iodata_to_binary()
-    |> String.to_integer(2)
+    <<get_bitstring(current_timestamp, 41)::bitstring, value::bitstring>>
+    |> bitstring_to_integer
   end
 
   @doc """
   Convert number into a padded string of bit representation in a string
 
   ## Examples
-  iex>GlobalId.get_bin_string(33, 12)
-  "000000100001"
+  iex>GlobalId.get_bitstring(33, 12)
+  <<33::12>>
 
-  iex>GlobalId.get_bin_string(4095, 12)
-  "111111111111"
+  iex>GlobalId.get_bitstring(4095, 12)
+  <<4095::12>>
 
-  iex>GlobalId.get_bin_string(4095, 13)
-  "0111111111111"
+  iex>GlobalId.get_bitstring(4095, 13)
+  <<4095::13>>
 
-  iex>GlobalId.get_bin_string(1023, 10)
-  "1111111111"
+  iex>GlobalId.get_bitstring(1023, 10)
+  <<1023::10>>
 
-  iex>GlobalId.get_bin_string(1, 10)
-  "0000000001"
+  iex>GlobalId.get_bitstring(1, 10)
+  <<1::10>>
   """
-  @spec get_bin_string(non_neg_integer, non_neg_integer) :: binary
-  def get_bin_string(number, size) do
-    Integer.to_string(number, 2) |> String.pad_leading(size, "0")
+  @spec get_bitstring(non_neg_integer, non_neg_integer) :: binary
+  def get_bitstring(number, size_of) do
+    # Integer.to_string(number, 2) |> String.pad_leading(size, "0")
+    <<number::size(size_of)>>
+  end
+
+  def bitstring_to_integer(<<value::64>>) do
+    value
   end
 
   @doc """
