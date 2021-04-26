@@ -31,21 +31,10 @@ defmodule GlobalId do
   @doc """
   What initialized state should look like
   """
-  @spec initialize(non_neg_integer) :: GlobalId.t()
-  def initialize(node_id) do
-    # Compute all the values for this node and put them in persistent_term for easy rapid access
-    # Ids per milli - 13 all of 0000000000000 - 1111111111111
-    # Node - 10 one value between 0000000000 - 1111111111
-    0..8191
-    |> Enum.each(fn index ->
-      :persistent_term.put(
-        {node_id, index},
-        {index, <<get_bitstring(index, 13)::bitstring, get_bitstring(node_id, 10)::bitstring>>}
-      )
-    end)
-
+  @spec initialize(non_neg_integer, non_neg_integer) :: GlobalId.t()
+  def initialize(node_id, current_timestamp) do
     %GlobalId{
-      current_timestamp: timestamp(),
+      current_timestamp: current_timestamp,
       current_id: 0,
       node_id: node_id
     }
@@ -56,7 +45,7 @@ defmodule GlobalId do
   """
   @spec start_link(any) :: {:error, any} | {:ok, pid}
   def start_link(node_id) when node_id in 0..1023 do
-    Agent.start_link(fn -> initialize(node_id) end, name: GlobalId)
+    Agent.start_link(fn -> initialize(node_id, timestamp()) end, name: GlobalId)
   end
 
   @doc """
@@ -86,18 +75,14 @@ defmodule GlobalId do
 
   ## Examples
 
-    iex>GlobalId.next_id(GlobalId.initialize(0), 16193045183241)
-    %GlobalId{current_id: 0, current_timestamp: 16193045183241, node_id: 0}
+    iex>GlobalId.next_id(GlobalId.initialize(0, 1619304518324), 1619304518325)
+    %GlobalId{current_id: 0, current_timestamp: 1619304518325, node_id: 0}
 
-    iex>GlobalId.next_id(GlobalId.initialize(1023), 16193045183241)
-    %GlobalId{current_id: 0, current_timestamp: 16193045183241, node_id: 1023}
+    iex>GlobalId.next_id(GlobalId.initialize(1023, 1619304518324), 1619304518325)
+    %GlobalId{current_id: 0, current_timestamp: 1619304518325, node_id: 1023}
 
-    iex>GlobalId.next_id(%GlobalId{
-    ...>current_timestamp: 1619304518324,
-    ...>current_id: 0,
-    ...>node_id: 0
-    ...>}, 1619304518324)
-    %GlobalId{current_id: 1, current_timestamp: 1619304518324, node_id: 0}
+    iex>GlobalId.next_id(GlobalId.initialize(1023, 1619304518324), 1619304518324)
+    %GlobalId{current_id: 1, current_timestamp: 1619304518324, node_id: 1023}
 
     iex>GlobalId.next_id(%GlobalId{
     ...>current_timestamp: 1619304518324,
@@ -141,9 +126,8 @@ defmodule GlobalId do
 
   ## Examples
 
-    iex>state = GlobalId.initialize(1023)
+    iex>state = GlobalId.initialize(1023, 1619300510744)
     iex>GlobalId.next_id_process(%GlobalId{ state |
-    ...>current_timestamp: 1619300510744,
     ...>current_id: 44
     ...>})
     13583677218831250431
@@ -155,35 +139,9 @@ defmodule GlobalId do
         current_id: current_id,
         node_id: node_id
       }) do
-    {_, value} = :persistent_term.get({node_id, current_id})
-
-    <<get_bitstring(current_timestamp, 41)::bitstring, value::bitstring>>
+    <<(<<current_timestamp::41>>)::bitstring, <<current_id::13>>::bitstring,
+      <<node_id::10>>::bitstring>>
     |> bitstring_to_integer
-  end
-
-  @doc """
-  Convert number into a padded string of bit representation in a string
-
-  ## Examples
-  iex>GlobalId.get_bitstring(33, 12)
-  <<33::12>>
-
-  iex>GlobalId.get_bitstring(4095, 12)
-  <<4095::12>>
-
-  iex>GlobalId.get_bitstring(4095, 13)
-  <<4095::13>>
-
-  iex>GlobalId.get_bitstring(1023, 10)
-  <<1023::10>>
-
-  iex>GlobalId.get_bitstring(1, 10)
-  <<1::10>>
-  """
-  @spec get_bitstring(non_neg_integer, non_neg_integer) :: binary
-  def get_bitstring(number, size_of) do
-    # Integer.to_string(number, 2) |> String.pad_leading(size, "0")
-    <<number::size(size_of)>>
   end
 
   def bitstring_to_integer(<<value::64>>) do
